@@ -187,8 +187,8 @@ class BIP68Test(BitcoinTestFramework):
                     if ((cur_time - orig_time) >> SEQUENCE_LOCKTIME_GRANULARITY) >= SEQUENCE_LOCKTIME_MASK:
                         can_time_lock = False
 
-                    # if time-lockable, then 50% chance we make this a time lock
-                    if random.randint(0,1) and can_time_lock:
+                    # if time-lockable, then force this to be a time lock
+                    if can_time_lock:
                         # Find first time-lock value that fails, or latest one that succeeds
                         time_delta = sequence_value << SEQUENCE_LOCKTIME_GRANULARITY
                         if input_will_pass and time_delta > cur_time - orig_time:
@@ -196,6 +196,10 @@ class BIP68Test(BitcoinTestFramework):
                         elif (not input_will_pass and time_delta <= cur_time - orig_time):
                             sequence_value = ((cur_time - orig_time) >> SEQUENCE_LOCKTIME_GRANULARITY)+1
                         sequence_value |= SEQUENCE_LOCKTIME_TYPE_FLAG
+                    else:
+                        # Force test to fail for height-based locks
+                        sequence_value = 0
+                        should_pass = False
                 tx.vin.append(CTxIn(COutPoint(int(utxos[j]["txid"], 16), utxos[j]["vout"]), nSequence=sequence_value))
                 value += utxos[j]["value"]*COIN
             # Overestimate the size of the tx - signatures should be less than 120 bytes, and leave 50 for the output
